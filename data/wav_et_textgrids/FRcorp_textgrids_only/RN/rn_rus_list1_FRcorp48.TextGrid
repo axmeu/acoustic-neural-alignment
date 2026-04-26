@@ -1,0 +1,144 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0.0
+xmax = 2.58902
+tiers? <exists>
+size = 2
+item []:
+item [1]:
+class = "IntervalTier"
+name = "words"
+xmin = 0.0
+xmax = 2.58902
+intervals: size = 7
+intervals [1]:
+xmin = 0.0
+xmax = 0.39
+text = ""
+intervals [2]:
+xmin = 0.39
+xmax = 0.54
+text = "dis"
+intervals [3]:
+xmin = 0.54
+xmax = 1.54
+text = "pour gabriel"
+intervals [4]:
+xmin = 1.54
+xmax = 1.59
+text = ""
+intervals [5]:
+xmin = 1.59
+xmax = 1.85738
+text = "trois"
+intervals [6]:
+xmin = 1.85738
+xmax = 2.27933
+text = "fois"
+intervals [7]:
+xmin = 2.27933
+xmax = 2.58902
+text = ""
+item [2]:
+class = "IntervalTier"
+name = "phones"
+xmin = 0.0
+xmax = 2.58902
+intervals: size = 24
+intervals [1]:
+xmin = 0.0
+xmax = 0.39
+text = ""
+intervals [2]:
+xmin = 0.39
+xmax = 0.46
+text = "ding... d"
+intervals [3]:
+xmin = 0.46
+xmax = 0.54
+text = "i"
+intervals [4]:
+xmin = 0.54
+xmax = 0.68
+text = "p"
+intervals [5]:
+xmin = 0.68
+xmax = 0.75366
+text = "u"
+intervals [6]:
+xmin = 0.75366
+xmax = 0.82
+text = "ʁ̥"
+intervals [7]:
+xmin = 0.82
+xmax = 0.89
+text = "ɡ"
+intervals [8]:
+xmin = 0.89
+xmax = 0.96
+text = "a"
+intervals [9]:
+xmin = 0.96
+xmax = 1.0
+text = "b̥"
+intervals [10]:
+xmin = 1.0
+xmax = 1.09
+text = "ʁ"
+intervals [11]:
+xmin = 1.09
+xmax = 1.19354
+text = "i"
+intervals [12]:
+xmin = 1.19354
+xmax = 1.27039
+text = "j"
+intervals [13]:
+xmin = 1.27039
+xmax = 1.38
+text = "ɛ"
+intervals [14]:
+xmin = 1.38
+xmax = 1.45894
+text = "l"
+intervals [15]:
+xmin = 1.45894
+xmax = 1.54
+text = "ə̰"
+intervals [16]:
+xmin = 1.54
+xmax = 1.59
+text = ""
+intervals [17]:
+xmin = 1.59
+xmax = 1.63
+text = "t"
+intervals [18]:
+xmin = 1.63
+xmax = 1.75
+text = "ʁ"
+intervals [19]:
+xmin = 1.75
+xmax = 1.78
+text = "w"
+intervals [20]:
+xmin = 1.78
+xmax = 1.85738
+text = "ɑ"
+intervals [21]:
+xmin = 1.85738
+xmax = 2.05
+text = "f"
+intervals [22]:
+xmin = 2.05
+xmax = 2.13
+text = "w"
+intervals [23]:
+xmin = 2.13
+xmax = 2.27933
+text = "a"
+intervals [24]:
+xmin = 2.27933
+xmax = 2.58902
+text = ""

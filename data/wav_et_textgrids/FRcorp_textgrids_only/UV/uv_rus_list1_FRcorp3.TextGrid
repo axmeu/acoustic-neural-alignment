@@ -1,0 +1,120 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0.0
+xmax = 4.22603
+tiers? <exists>
+size = 2
+item []:
+item [1]:
+class = "IntervalTier"
+name = "words"
+xmin = 0.0
+xmax = 4.22603
+intervals: size = 7
+intervals [1]:
+xmin = 0.0
+xmax = 1.43
+text = ""
+intervals [2]:
+xmin = 1.43
+xmax = 2.0
+text = "dis"
+intervals [3]:
+xmin = 2.0
+xmax = 2.08
+text = ""
+intervals [4]:
+xmin = 2.08
+xmax = 2.94877
+text = "cache cache"
+intervals [5]:
+xmin = 2.94877
+xmax = 3.3
+text = "trois"
+intervals [6]:
+xmin = 3.3
+xmax = 3.71
+text = "fois"
+intervals [7]:
+xmin = 3.71
+xmax = 4.22603
+text = ""
+item [2]:
+class = "IntervalTier"
+name = "phones"
+xmin = 0.0
+xmax = 4.22603
+intervals: size = 18
+intervals [1]:
+xmin = 0.0
+xmax = 1.43
+text = ""
+intervals [2]:
+xmin = 1.43
+xmax = 1.57
+text = "d"
+intervals [3]:
+xmin = 1.57
+xmax = 2.0
+text = "i"
+intervals [4]:
+xmin = 2.0
+xmax = 2.08
+text = ""
+intervals [5]:
+xmin = 2.08
+xmax = 2.14944
+text = "k"
+intervals [6]:
+xmin = 2.14944
+xmax = 2.3567
+text = "a"
+intervals [7]:
+xmin = 2.3567
+xmax = 2.53429
+text = "ʃ"
+intervals [8]:
+xmin = 2.53429
+xmax = 2.67091
+text = "k"
+intervals [9]:
+xmin = 2.67091
+xmax = 2.83091
+text = "a"
+intervals [10]:
+xmin = 2.83091
+xmax = 2.94877
+text = "ʃ"
+intervals [11]:
+xmin = 2.94877
+xmax = 3.02
+text = "t"
+intervals [12]:
+xmin = 3.02
+xmax = 3.07
+text = "ʁ"
+intervals [13]:
+xmin = 3.07
+xmax = 3.13
+text = "w"
+intervals [14]:
+xmin = 3.13
+xmax = 3.3
+text = "a"
+intervals [15]:
+xmin = 3.3
+xmax = 3.44
+text = "f"
+intervals [16]:
+xmin = 3.44
+xmax = 3.5
+text = "w"
+intervals [17]:
+xmin = 3.5
+xmax = 3.71
+text = "a"
+intervals [18]:
+xmin = 3.71
+xmax = 4.22603
+text = ""

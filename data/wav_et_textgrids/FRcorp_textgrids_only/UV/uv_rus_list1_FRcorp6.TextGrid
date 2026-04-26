@@ -1,0 +1,144 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0.0
+xmax = 5.06195
+tiers? <exists>
+size = 2
+item []:
+item [1]:
+class = "IntervalTier"
+name = "words"
+xmin = 0.0
+xmax = 5.06195
+intervals: size = 7
+intervals [1]:
+xmin = 0.0
+xmax = 2.14137
+text = ""
+intervals [2]:
+xmin = 2.14137
+xmax = 2.49
+text = "dis"
+intervals [3]:
+xmin = 2.49
+xmax = 2.62007
+text = ""
+intervals [4]:
+xmin = 2.62007
+xmax = 3.79875
+text = "pour gabriel"
+intervals [5]:
+xmin = 3.79875
+xmax = 4.14
+text = "trois"
+intervals [6]:
+xmin = 4.14
+xmax = 4.60828
+text = "fois"
+intervals [7]:
+xmin = 4.60828
+xmax = 5.06195
+text = ""
+item [2]:
+class = "IntervalTier"
+name = "phones"
+xmin = 0.0
+xmax = 5.06195
+intervals: size = 24
+intervals [1]:
+xmin = 0.0
+xmax = 2.14137
+text = ""
+intervals [2]:
+xmin = 2.14137
+xmax = 2.28
+text = "d"
+intervals [3]:
+xmin = 2.28
+xmax = 2.49
+text = "i"
+intervals [4]:
+xmin = 2.49
+xmax = 2.62007
+text = ""
+intervals [5]:
+xmin = 2.62007
+xmax = 2.72848
+text = "p"
+intervals [6]:
+xmin = 2.72848
+xmax = 2.94504
+text = "u"
+intervals [7]:
+xmin = 2.94504
+xmax = 3.06761
+text = "ʁ"
+intervals [8]:
+xmin = 3.06761
+xmax = 3.18
+text = "ə"
+intervals [9]:
+xmin = 3.18
+xmax = 3.2777
+text = "ɡ"
+intervals [10]:
+xmin = 3.2777
+xmax = 3.38
+text = "a"
+intervals [11]:
+xmin = 3.38
+xmax = 3.45
+text = "b̥"
+intervals [12]:
+xmin = 3.45
+xmax = 3.55997
+text = "ʁ"
+intervals [13]:
+xmin = 3.55997
+xmax = 3.64513
+text = "i"
+intervals [14]:
+xmin = 3.64513
+xmax = 3.67952
+text = "j"
+intervals [15]:
+xmin = 3.67952
+xmax = 3.74
+text = "ɛ"
+intervals [16]:
+xmin = 3.74
+xmax = 3.79875
+text = "l"
+intervals [17]:
+xmin = 3.79875
+xmax = 3.89
+text = "t"
+intervals [18]:
+xmin = 3.89
+xmax = 3.96
+text = "ʁ"
+intervals [19]:
+xmin = 3.96
+xmax = 4.01
+text = "w"
+intervals [20]:
+xmin = 4.01
+xmax = 4.14
+text = "a"
+intervals [21]:
+xmin = 4.14
+xmax = 4.27
+text = "f"
+intervals [22]:
+xmin = 4.27
+xmax = 4.33
+text = "w"
+intervals [23]:
+xmin = 4.33
+xmax = 4.60828
+text = "a"
+intervals [24]:
+xmin = 4.60828
+xmax = 5.06195
+text = ""

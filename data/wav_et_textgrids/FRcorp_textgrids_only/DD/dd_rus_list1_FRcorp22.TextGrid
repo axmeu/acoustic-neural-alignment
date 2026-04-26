@@ -1,0 +1,148 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0.0
+xmax = 2.9141
+tiers? <exists>
+size = 2
+item []:
+item [1]:
+class = "IntervalTier"
+name = "words"
+xmin = 0.0
+xmax = 2.9141
+intervals: size = 8
+intervals [1]:
+xmin = 0.0
+xmax = 0.56492
+text = ""
+intervals [2]:
+xmin = 0.56492
+xmax = 0.92
+text = "dis"
+intervals [3]:
+xmin = 0.92
+xmax = 1.1
+text = ""
+intervals [4]:
+xmin = 1.1
+xmax = 2.09
+text = "pour gabriel"
+intervals [5]:
+xmin = 2.09
+xmax = 2.2
+text = ""
+intervals [6]:
+xmin = 2.2
+xmax = 2.39
+text = "trois"
+intervals [7]:
+xmin = 2.39
+xmax = 2.73943
+text = "fois"
+intervals [8]:
+xmin = 2.73943
+xmax = 2.9141
+text = ""
+item [2]:
+class = "IntervalTier"
+name = "phones"
+xmin = 0.0
+xmax = 2.9141
+intervals: size = 24
+intervals [1]:
+xmin = 0.0
+xmax = 0.56492
+text = ""
+intervals [2]:
+xmin = 0.56492
+xmax = 0.7
+text = "ding... d"
+intervals [3]:
+xmin = 0.7
+xmax = 0.92
+text = "i"
+intervals [4]:
+xmin = 0.92
+xmax = 1.1
+text = ""
+intervals [5]:
+xmin = 1.1
+xmax = 1.18436
+text = "p"
+intervals [6]:
+xmin = 1.18436
+xmax = 1.25018
+text = "u"
+intervals [7]:
+xmin = 1.25018
+xmax = 1.3222
+text = "ʀ̥"
+intervals [8]:
+xmin = 1.3222
+xmax = 1.40371
+text = "ɡ"
+intervals [9]:
+xmin = 1.40371
+xmax = 1.49943
+text = "a"
+intervals [10]:
+xmin = 1.49943
+xmax = 1.58761
+text = "b"
+intervals [11]:
+xmin = 1.58761
+xmax = 1.66
+text = "ʁ"
+intervals [12]:
+xmin = 1.66
+xmax = 1.74
+text = "i"
+intervals [13]:
+xmin = 1.74
+xmax = 1.85861
+text = "j"
+intervals [14]:
+xmin = 1.85861
+xmax = 2.02
+text = "ɛ"
+intervals [15]:
+xmin = 2.02
+xmax = 2.09
+text = "l"
+intervals [16]:
+xmin = 2.09
+xmax = 2.2
+text = ""
+intervals [17]:
+xmin = 2.2
+xmax = 2.24
+text = "t"
+intervals [18]:
+xmin = 2.24
+xmax = 2.33
+text = "ʁ"
+intervals [19]:
+xmin = 2.33
+xmax = 2.36
+text = "w"
+intervals [20]:
+xmin = 2.36
+xmax = 2.39
+text = "ɑ"
+intervals [21]:
+xmin = 2.39
+xmax = 2.57
+text = "f"
+intervals [22]:
+xmin = 2.57
+xmax = 2.63
+text = "w"
+intervals [23]:
+xmin = 2.63
+xmax = 2.73943
+text = "a"
+intervals [24]:
+xmin = 2.73943
+xmax = 2.9141
+text = ""

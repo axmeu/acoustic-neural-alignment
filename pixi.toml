@@ -1,0 +1,26 @@
+[workspace]
+name = "acoustic_and_neural_representations"
+channels = ["conda-forge", "pytorch"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = ">=3.11"
+pytorch = {version = "2.5.*", channel = "pytorch"}
+torchaudio = {version = "*", channel = "pytorch"}
+pytorch-cuda = {version = "12.4.*", channel = "pytorch"}
+pandas = ">=2.0"
+numpy = "*"
+scipy = "*"
+scikit-learn = "*"
+matplotlib = "*"
+seaborn = "*"
+umap-learn = "*"
+ipykernel = ">=7.2.0,<8"
+tqdm = ">=4.67.3,<5"
+dvc = ">=3.67.1,<4"
+
+[pypi-dependencies]
+praat-parselmouth = "*"
+transformers = "*"
+soundfile = "*"
+librosa = "*"

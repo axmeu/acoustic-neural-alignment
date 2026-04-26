@@ -1,0 +1,220 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0.0
+xmax = 6.5132
+tiers? <exists>
+size = 2
+item []:
+item [1]:
+class = "IntervalTier"
+name = "words"
+xmin = 0.0
+xmax = 6.5132
+intervals: size = 17
+intervals [1]:
+xmin = 0.0
+xmax = 1.51
+text = ""
+intervals [2]:
+xmin = 1.51
+xmax = 1.77
+text = "la"
+intervals [3]:
+xmin = 1.77
+xmax = 1.99
+text = "roue"
+intervals [4]:
+xmin = 1.99
+xmax = 2.35
+text = "sur"
+intervals [5]:
+xmin = 2.35
+xmax = 2.55
+text = "la"
+intervals [6]:
+xmin = 2.55
+xmax = 2.76
+text = "rue"
+intervals [7]:
+xmin = 2.76
+xmax = 3.12
+text = "roule"
+intervals [8]:
+xmin = 3.12
+xmax = 3.32
+text = ""
+intervals [9]:
+xmin = 3.32
+xmax = 3.61
+text = "la"
+intervals [10]:
+xmin = 3.61
+xmax = 4.02316
+text = "rue"
+intervals [11]:
+xmin = 4.02316
+xmax = 4.04
+text = ""
+intervals [12]:
+xmin = 4.04
+xmax = 4.73
+text = "sous"
+intervals [13]:
+xmin = 4.73
+xmax = 5.1
+text = "la"
+intervals [14]:
+xmin = 5.1
+xmax = 5.43
+text = "roue"
+intervals [15]:
+xmin = 5.43
+xmax = 5.46
+text = ""
+intervals [16]:
+xmin = 5.46
+xmax = 6.1
+text = "reste"
+intervals [17]:
+xmin = 6.1
+xmax = 6.5132
+text = ""
+item [2]:
+class = "IntervalTier"
+name = "phones"
+xmin = 0.0
+xmax = 6.5132
+intervals: size = 33
+intervals [1]:
+xmin = 0.0
+xmax = 1.51
+text = ""
+intervals [2]:
+xmin = 1.51
+xmax = 1.64
+text = "l"
+intervals [3]:
+xmin = 1.64
+xmax = 1.77
+text = "a"
+intervals [4]:
+xmin = 1.77
+xmax = 1.84
+text = "ʁ"
+intervals [5]:
+xmin = 1.84
+xmax = 1.99
+text = "u"
+intervals [6]:
+xmin = 1.99
+xmax = 2.16
+text = "s"
+intervals [7]:
+xmin = 2.16
+xmax = 2.22
+text = "y"
+intervals [8]:
+xmin = 2.22
+xmax = 2.35
+text = "ʁ"
+intervals [9]:
+xmin = 2.35
+xmax = 2.42
+text = "l"
+intervals [10]:
+xmin = 2.42
+xmax = 2.55
+text = "a"
+intervals [11]:
+xmin = 2.55
+xmax = 2.63
+text = "ʁ"
+intervals [12]:
+xmin = 2.63
+xmax = 2.76
+text = "y"
+intervals [13]:
+xmin = 2.76
+xmax = 2.88
+text = "ʁ"
+intervals [14]:
+xmin = 2.88
+xmax = 3.04
+text = "u"
+intervals [15]:
+xmin = 3.04
+xmax = 3.12
+text = "l"
+intervals [16]:
+xmin = 3.12
+xmax = 3.32
+text = ""
+intervals [17]:
+xmin = 3.32
+xmax = 3.46
+text = "l"
+intervals [18]:
+xmin = 3.46
+xmax = 3.61
+text = "a"
+intervals [19]:
+xmin = 3.61
+xmax = 3.77588
+text = "ʁ"
+intervals [20]:
+xmin = 3.77588
+xmax = 4.02316
+text = "u"
+intervals [21]:
+xmin = 4.02316
+xmax = 4.04
+text = ""
+intervals [22]:
+xmin = 4.04
+xmax = 4.35
+text = "s"
+intervals [23]:
+xmin = 4.35
+xmax = 4.73
+text = "u"
+intervals [24]:
+xmin = 4.73
+xmax = 4.89
+text = "l"
+intervals [25]:
+xmin = 4.89
+xmax = 5.1
+text = "a"
+intervals [26]:
+xmin = 5.1
+xmax = 5.21
+text = "ʁ"
+intervals [27]:
+xmin = 5.21
+xmax = 5.43
+text = "u"
+intervals [28]:
+xmin = 5.43
+xmax = 5.46
+text = ""
+intervals [29]:
+xmin = 5.46
+xmax = 5.62
+text = "ʁ"
+intervals [30]:
+xmin = 5.62
+xmax = 5.78
+text = "ɛ"
+intervals [31]:
+xmin = 5.78
+xmax = 5.94
+text = "s"
+intervals [32]:
+xmin = 5.94
+xmax = 6.1
+text = "t"
+intervals [33]:
+xmin = 6.1
+xmax = 6.5132
+text = ""
