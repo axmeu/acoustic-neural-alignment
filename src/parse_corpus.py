@@ -54,13 +54,13 @@ def parse_wav_name(stem):
     return {"speaker_id": spk, "corp_num": corp_num}
 
 
-def iter_phonemes(textgrid, phoneme_tier, ignore_token):
+def iter_phonemes(textgrid, phoneme_tier):
     n_intervals = call(textgrid, "Get number of intervals", phoneme_tier)
 
     for i in range(1, n_intervals + 1):
         label = call(textgrid, "Get label of interval", phoneme_tier, i).strip()
 
-        if label.lower() in ignore_token:
+        if not label or label.lower().startswith("ding"):
             continue
 
         onset = call(textgrid, "Get start time of interval", phoneme_tier, i)
@@ -73,7 +73,7 @@ def iter_phonemes(textgrid, phoneme_tier, ignore_token):
         yield label, onset, offset, duration_ms
 
 
-def parse_file(wav_path, metadata, corpus_index, phoneme_tier, ignore_token):
+def parse_file(wav_path, metadata, corpus_index, phoneme_tier):
     info = parse_wav_name(wav_path.stem)
     spk = info["speaker_id"]
     corp_num = info["corp_num"]
@@ -84,6 +84,10 @@ def parse_file(wav_path, metadata, corpus_index, phoneme_tier, ignore_token):
         return []
 
     word, rep_idx = corpus_index[corp_num]
+
+    if "distractor" in word.lower():
+        return []
+
     spk_meta = metadata.loc[spk]
 
     textgrid_path = wav_path.with_suffix(".TextGrid")
@@ -94,11 +98,11 @@ def parse_file(wav_path, metadata, corpus_index, phoneme_tier, ignore_token):
 
     rows = []
     for position, (label, onset, offset, duration_ms) in enumerate(
-            iter_phonemes(textgrid, phoneme_tier, ignore_token)):
+            iter_phonemes(textgrid, phoneme_tier)):
 
         speaker_id = spk.upper()
         rows.append({
-            "phoneme_id":  f"{speaker_id}__{word}__{rep_idx}__p{position}__{label}",
+            "phoneme_id":  f"{speaker_id}_{word}_rep{rep_idx}_p{position}_{label}",
             "speaker_id":  speaker_id,
             "sentence_id": word,
             "repetition":  rep_idx,
@@ -115,7 +119,7 @@ def parse_file(wav_path, metadata, corpus_index, phoneme_tier, ignore_token):
     return rows
 
 
-def parse_corpus(raw_dir, metadata_file, corr_file, phoneme_tier, ignore_token, output_path):
+def parse_corpus(raw_dir, metadata_file, corr_file, phoneme_tier, output_path):
     raw_dir = Path(raw_dir)
     tg_dir = raw_dir / "wav_et_textgrids" / "FRcorp_textgrids_only"
 
@@ -127,11 +131,11 @@ def parse_corpus(raw_dir, metadata_file, corr_file, phoneme_tier, ignore_token, 
     all_rows = []
     for wav_path in tqdm(wav_files, desc="Parsing corpus"):
         all_rows.extend(
-            parse_file(wav_path, metadata, corpus_index, phoneme_tier, ignore_token)
+            parse_file(wav_path, metadata, corpus_index, phoneme_tier)
         )
 
     df = pd.DataFrame(all_rows, columns=[
-        "speaker_id", "sentence_id", "repetition",
+        "phoneme_id", "speaker_id", "sentence_id", "repetition",
         "phoneme", "onset_s", "offset_s", "duration_ms",
         "l1_status", "gender", "wav_path", "tg_path",
     ])
@@ -163,5 +167,4 @@ if __name__ == "__main__":
                  metadata_file=args.metadata_file,
                  corr_file=args.corr_file,
                  phoneme_tier=args.phoneme_tier,
-                 ignore_token={"", "ding... d"},
                  output_path=args.output)
