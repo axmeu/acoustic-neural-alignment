@@ -12,6 +12,8 @@ FORMANTS = ("F1_mid", "F2_mid")
 
 def lobanov_normalise(df):
     df = df.copy()
+    for formant in FORMANTS:
+        df[f"{formant}_lob"] = np.nan
     for spk, grp in df.groupby("speaker_id"):
         for formant in FORMANTS:
             if formant not in df.columns:
@@ -20,7 +22,7 @@ def lobanov_normalise(df):
             if len(vals) < 2:
                 continue
             mu = vals.mean()
-            sd = vals.std(ddof=0)
+            sd = vals.std(ddof=1)
             if sd == 0:
                 continue
             df.loc[grp.index, f"{formant}_lob"] = (grp[formant] - mu) / sd
@@ -108,10 +110,24 @@ if __name__ == "__main__":
 
     print("\n=== Acoustic normalisation ===")
     df = pd.read_csv(args.acoustic)
-    vowel_mask = df["phoneme_label"].str.match(VOWEL_RE, na=False)
+    vowel_mask = df["phoneme"].apply(is_vowel)
     df_vowels = lobanov_normalise(df[vowel_mask].copy())
 
     df_out = df.copy()
     lob_cols = [f"{f}_lob" for f in FORMANTS if f in df.columns]
     df_out.loc[vowel_mask, lob_cols] = df_vowels[lob_cols].values
     save_csv(output_path / "features_acoustic_norm.csv", df_out)
+
+    print("\n=== Whisper normalisation ===")
+    normalise_neural(args.whisper, output_path, tag="whisper",
+                     n_pca_clust=args.n_pca_clust,
+                     n_pca_lme=args.n_pca_lme,
+                     n_umap_neighbors=args.n_umap_neighbors,
+                     umap_min_dist=args.umap_min_dist)
+
+    print("\n=== XLSR normalisation ===")
+    normalise_neural(args.xlsr, output_path, tag="xlsr",
+                     n_pca_clust=args.n_pca_clust,
+                     n_pca_lme=args.n_pca_lme,
+                     n_umap_neighbors=args.n_umap_neighbors,
+                     umap_min_dist=args.umap_min_dist)

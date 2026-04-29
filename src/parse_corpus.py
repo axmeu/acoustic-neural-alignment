@@ -5,7 +5,7 @@ import parselmouth
 from parselmouth.praat import call
 import argparse
 from tqdm import tqdm
-from utils.py import save_csv
+from utils import save_csv
 
 
 def load_metadata(path_dir, filename):

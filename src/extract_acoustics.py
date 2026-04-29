@@ -4,7 +4,7 @@ import parselmouth
 from parselmouth.praat import call
 import argparse
 from tqdm import tqdm
-from utils import save_csv, is_vowel
+from utils import save_csv, is_vowel, is_fricative
 
 
 def get_max_formant(gender):
@@ -27,11 +27,17 @@ def extract_formants(sound, time, max_formant, n_formants=5):
 
 def extract_f0(sound, time):
     try:
-        pitch = call(sound, "To Pitch (ac)", 0.0, 75, 600)
-
-        if not call(pitch, "Is voiced at time", time, "Hertz"):
-            return np.nan
-
+        pitch = call(sound, "To Pitch (ac)",
+                     0.0,    # time step (0 = auto)
+                     75.0,   # pitch floor (Hz)
+                     15,     # max number of candidates
+                     "yes",  # very accurate
+                     0.03,   # silence threshold
+                     0.45,   # voicing threshold
+                     0.01,   # octave cost
+                     0.35,   # octave-jump cost
+                     0.14,   # voiced/unvoiced cost
+                     600.0)  # pitch ceiling (Hz)
         val = call(pitch, "Get value at time", time, "Hertz", "Linear")
         return val if val == val else np.nan
     except Exception:
@@ -58,13 +64,8 @@ def extract_token(row, sound, n_formants=5):
 
     formants_mid = extract_formants(segment, midpoint, max_formant, n_formants)
     f0 = extract_f0(segment, midpoint)
-    scg = extract_scg(segment)
-
-    is_v = is_vowel(row["phoneme"])
-    if is_v:
-        F3 = formants_mid["F3"]
-    else:
-        F3 = np.nan
+    scg = extract_scg(segment) if is_fricative(row["phoneme"]) else np.nan
+    F3 = formants_mid["F3"] if is_vowel(row["phoneme"]) else np.nan
 
     feats = {
         "phoneme_id": row["phoneme_id"],
@@ -88,7 +89,6 @@ def extract_token(row, sound, n_formants=5):
         for tag in ("25", "75"):
             feats[f"F1_{tag}"] = np.nan
             feats[f"F2_{tag}"] = np.nan
-
     return feats
 
 
@@ -107,15 +107,28 @@ def report_missing(df):
     print("\nMissing rates:")
     for c in cols:
         if c in df.columns:
-            print(c, df[c].isna().mean())
+            rate = df[c].isna().mean()
+            print(f"  {c}: {rate:.2%}")
 
-    print("\nBy phoneme:")
-    print(df.groupby("phoneme")[cols].apply(lambda x: x.isna().mean()))
+    print("\nMissing rates by phoneme:")
+    by_phoneme = (
+        df.groupby("phoneme")[cols]
+        .apply(lambda x: x.isna().mean())
+    )
+    print(by_phoneme.to_string())
+
+    print("\nMissing rates by group (l1_status, gender):")
+    by_group = (
+        df.groupby(["l1_status", "gender"])[cols]
+        .apply(lambda x: x.isna().mean())
+    )
+    print(by_group.to_string())
 
 
 def extract_acoustics(table_path, output_path, n_formants=5):
     df = pd.read_csv(table_path)
     records = []
+
     for wav_path, group in tqdm(df.groupby("wav_path"), desc="Extracting acoustics"):
         try:
             sound = parselmouth.Sound(wav_path)
@@ -136,4 +149,32 @@ def extract_acoustics(table_path, output_path, n_formants=5):
     out = pd.DataFrame(records, columns=[
         "phoneme_id",
         "F1_mid", "F2_mid", "F3_mid",
-        "f0_m
+        "f0_mid", "SCG",
+        "F1_25", "F2_25",
+        "F1_75", "F2_75",
+    ])
+
+    meta_cols = ["phoneme_id", "phoneme", "speaker_id",
+                 "sentence_id", "repetition", "duration_ms",
+                 "l1_status", "gender"]
+    out = df[meta_cols].merge(out, on="phoneme_id", how="left")
+    print("out shape:", out.shape)
+    print("out columns:", out.columns.tolist())
+    print(out[["phoneme_id", "F1_mid"]].head(10))
+
+    report_missing(out)
+    save_csv(output_path, out)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--table",     required=True)
+    parser.add_argument("--output",    default="outputs/features_acoustic.csv")
+    parser.add_argument("--n_formants", type=int, default=5)
+    args = parser.parse_args()
+
+    extract_acoustics(
+        table_path=args.table,
+        output_path=args.output,
+        n_formants=args.n_formants,
+    )

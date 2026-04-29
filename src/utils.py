@@ -13,6 +13,12 @@ VOWELS = {"u:", "œ̃", "ɨ", "œ", "y̥",
                  "y", "o", "e", "ɑ", "ø", 
                  "a", "ɑ̃", "i"}
 
+FRICATIVES = {"ʒ", "ʃ", "ʁ", "f", "s", "z",
+                "v", "ʀ", "ʁ̥", "ʒ̥", "sː", "ʐ", 
+                "ɕ", "ʀ̥", "ɬ", "ɫ", "ʁ̞", "ʒʲ", 
+                "ʂ", "ç", "v̥", "h", "x", "sʲ", 
+                "ʒ̞", "ʃː"}
+
 
 def save_csv(output_path, df):
     output_path = Path(output_path)
@@ -30,8 +36,12 @@ def save_csv(output_path, df):
         raise
 
 
-def is_vowel(s):
-    return s in VOWELS
+def is_vowel(phoneme):
+    return phoneme in VOWELS
+
+
+def is_fricative(phoneme):
+    return phoneme in FRICATIVES
 
 
 def load_audio(wav_path, target_sr=16_000):
