@@ -37,6 +37,7 @@ def apply_pca(vecs, valid_mask, n_components):
 
 
 def apply_umap(vecs, valid_mask, n_neighbors, min_dist):
+    print("\nComputing UMAP...")
     coords = np.full((len(vecs), 2), np.nan, dtype=np.float32)
     coords[valid_mask] = UMAP(
         n_components=2, n_neighbors=n_neighbors,
@@ -67,8 +68,8 @@ def normalise_neural(
     n_clust = min(n_pca_clust, n_valid, dim)
     coords, evr, comp, mean = apply_pca(vecs, valid_mask, n_clust)
     save_npz(output_dir / f"{tag}_pca{n_clust}.npz",
-             ids=ids,
-             vectors=coords,
+             ids_arr=ids,
+             vecs_arr=coords,
              explained_variance_ratio=evr,
              components=comp,
              mean=mean)
@@ -76,29 +77,31 @@ def normalise_neural(
     n_lme = min(n_pca_lme, n_valid, dim)
     coords, evr, comp, mean = apply_pca(vecs, valid_mask, n_lme)
     save_npz(output_dir / f"{tag}_pca{n_lme}_lme.npz",
-             ids=ids,
-             vectors=coords,
+             ids_arr=ids,
+             vecs_arr=coords,
              explained_variance_ratio=evr,
              components=comp,
              mean=mean)
 
     coords, evr, comp, mean = apply_pca(vecs, valid_mask, 2)
     save_npz(output_dir / f"{tag}_pca2.npz",
-             ids=ids,
-             vectors=coords,
+             ids_arr=ids,
+             vecs_arr=coords,
              explained_variance_ratio=evr,
              components=comp,
              mean=mean)
 
     coords = apply_umap(vecs, valid_mask, min(n_umap_neighbors, n_valid - 1), umap_min_dist)
-    save_npz(output_dir / f"{tag}_umap2.npz", ids=ids, vectors=coords)
+    save_npz(output_dir / f"{tag}_umap2.npz", ids_arr=ids, vecs_arr=coords)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--acoustic",       required=True)
-    parser.add_argument("--whisper",        required=True)
-    parser.add_argument("--xlsr",           required=True)
+    parser.add_argument("--acoustic",       required=True, default="outputs/features_acoustic.csv")
+    parser.add_argument("--whisper",        default=None)
+    parser.add_argument("--whisper-tag",    default="whisper")
+    parser.add_argument("--xlsr",           default=None)
+    parser.add_argument("--xlsr-tag",       default="xlsr")
     parser.add_argument("--output-dir",     default="outputs")
     parser.add_argument("--n-pca-clust",    type=int, default=50)
     parser.add_argument("--n-pca-lme",      type=int, default=5)
@@ -118,16 +121,18 @@ if __name__ == "__main__":
     df_out.loc[vowel_mask, lob_cols] = df_vowels[lob_cols].values
     save_csv(output_path / "features_acoustic_norm.csv", df_out)
 
-    print("\n=== Whisper normalisation ===")
-    normalise_neural(args.whisper, output_path, tag="whisper",
-                     n_pca_clust=args.n_pca_clust,
-                     n_pca_lme=args.n_pca_lme,
-                     n_umap_neighbors=args.n_umap_neighbors,
-                     umap_min_dist=args.umap_min_dist)
+    if args.whisper:
+        print("\n=== Whisper normalisation ===")
+        normalise_neural(args.whisper, output_path, tag=args.whisper_tag,
+                         n_pca_clust=args.n_pca_clust,
+                         n_pca_lme=args.n_pca_lme,
+                         n_umap_neighbors=args.n_umap_neighbors,
+                         umap_min_dist=args.umap_min_dist)
 
-    print("\n=== XLSR normalisation ===")
-    normalise_neural(args.xlsr, output_path, tag="xlsr",
-                     n_pca_clust=args.n_pca_clust,
-                     n_pca_lme=args.n_pca_lme,
-                     n_umap_neighbors=args.n_umap_neighbors,
-                     umap_min_dist=args.umap_min_dist)
+    if args.xlsr:
+        print("\n=== XLSR normalisation ===")
+        normalise_neural(args.xlsr, output_path, tag=args.xlsr_tag,
+                         n_pca_clust=args.n_pca_clust,
+                         n_pca_lme=args.n_pca_lme,
+                         n_umap_neighbors=args.n_umap_neighbors,
+                         umap_min_dist=args.umap_min_dist)
