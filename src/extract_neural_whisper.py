@@ -4,7 +4,7 @@ import torch
 import argparse
 from tqdm import tqdm
 from transformers import WhisperProcessor, WhisperModel
-from neural_utils import load_audio, get_frame_indices, save_npz
+from utils import load_audio, get_frame_indices, save_npz
 
 
 def load_model(model_name, device):

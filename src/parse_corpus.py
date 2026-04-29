@@ -3,10 +3,9 @@ import pandas as pd
 import re
 import parselmouth
 from parselmouth.praat import call
-import tempfile
-import os
 import argparse
 from tqdm import tqdm
+from utils.py import save_csv
 
 
 def load_metadata(path_dir, filename):
@@ -140,18 +139,7 @@ def parse_corpus(raw_dir, metadata_file, corr_file, phoneme_tier, output_path):
         "l1_status", "gender", "wav_path", "tg_path",
     ])
 
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    tmp_fd, tmp_path = tempfile.mkstemp(dir=output_path.parent, suffix=".csv")
-
-    try:
-        with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
-            df.to_csv(f, index=False)
-        os.replace(tmp_path, output_path)
-    except Exception:
-        os.unlink(tmp_path)
-        raise
+    save_csv(output_path, df)
 
 
 if __name__ == "__main__":

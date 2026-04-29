@@ -1,12 +1,10 @@
-from pathlib import Path
 import pandas as pd
 import numpy as np
 import parselmouth
 from parselmouth.praat import call
-import tempfile
-import os
 import argparse
 from tqdm import tqdm
+from utils import save_csv, is_vowel
 
 
 def get_max_formant(gender):
@@ -29,7 +27,11 @@ def extract_formants(sound, time, max_formant, n_formants=5):
 
 def extract_f0(sound, time):
     try:
-        pitch = call(sound, "To Pitch", 0.0, 75.0, 600.0)
+        pitch = call(sound, "To Pitch (ac)", 0.0, 75, 600)
+
+        if not call(pitch, "Is voiced at time", time, "Hertz"):
+            return np.nan
+
         val = call(pitch, "Get value at time", time, "Hertz", "Linear")
         return val if val == val else np.nan
     except Exception:
@@ -58,13 +60,20 @@ def extract_token(row, sound, n_formants=5):
     f0 = extract_f0(segment, midpoint)
     scg = extract_scg(segment)
 
+    is_v = is_vowel(row["phoneme"])
+    if is_v:
+        F3 = formants_mid["F3"]
+    else:
+        F3 = np.nan
+
     feats = {
         "phoneme_id": row["phoneme_id"],
-        "F1_mid": formants_mid["F1"],
-        "F2_mid": formants_mid["F2"],
-        "F3_mid": formants_mid["F3"],
-        "f0_mid": f0,
-        "SCG":    scg,
+        "phoneme":    row["phoneme"],
+        "F1_mid":     formants_mid["F1"],
+        "F2_mid":     formants_mid["F2"],
+        "F3_mid":     F3,
+        "f0_mid":     f0,
+        "SCG":        scg,
     }
 
     if row["duration_ms"] > 80.0:
@@ -93,6 +102,17 @@ def empty_feats(phoneme_id):
     }
 
 
+def report_missing(df):
+    cols = ["F1_mid", "F2_mid", "F3_mid", "f0_mid", "SCG"]
+    print("\nMissing rates:")
+    for c in cols:
+        if c in df.columns:
+            print(c, df[c].isna().mean())
+
+    print("\nBy phoneme:")
+    print(df.groupby("phoneme")[cols].apply(lambda x: x.isna().mean()))
+
+
 def extract_acoustics(table_path, output_path, n_formants=5):
     df = pd.read_csv(table_path)
     records = []
@@ -116,33 +136,4 @@ def extract_acoustics(table_path, output_path, n_formants=5):
     out = pd.DataFrame(records, columns=[
         "phoneme_id",
         "F1_mid", "F2_mid", "F3_mid",
-        "f0_mid", "SCG",
-        "F1_25", "F2_25",
-        "F1_75", "F2_75",
-    ])
-
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    tmp_fd, tmp_path = tempfile.mkstemp(dir=output_path.parent, suffix=".csv")
-    try:
-        with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
-            out.to_csv(f, index=False)
-        os.replace(tmp_path, output_path)
-    except Exception:
-        os.unlink(tmp_path)
-        raise
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--table",      required=True,  help="outputs/table.csv from parse_corpus")
-    parser.add_argument("--output",     default="outputs/features_acoustic.csv")
-    parser.add_argument("--n_formants", type=int, default=5)
-    args = parser.parse_args()
-
-    extract_acoustics(
-        table_path=args.table,
-        output_path=args.output,
-        n_formants=args.n_formants,
-    )
+        "f0_m
