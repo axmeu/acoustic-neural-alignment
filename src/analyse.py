@@ -222,6 +222,7 @@ def desc_neural(meta, layers, out):
                                                       replace=False)
                 sim_mat = vecs_n[idx] @ vecs_n[idx].T
                 labels_sub = ph_labels[idx]
+                labels_sub = np.array(ph_labels[idx])
                 same_mask = labels_sub[:, None] == labels_sub[None, :]
                 np.fill_diagonal(same_mask, False)
                 within = sim_mat[same_mask].mean() if same_mask.any() else np.nan
@@ -401,7 +402,7 @@ def group_comparisons(ac, layers: list[dict], out: Path):
                     rr[-1]["p_bh"] = p_corr[k]
 
     save_csv(out / "tables" / "6_neural_permutation.csv", pd.DataFrame(perm_rows), index=True)
-    print("  §6.1 done.")
+    print("Group comparison done")
 
 
 def distances(ac, layers, out):
@@ -458,9 +459,12 @@ def distances(ac, layers, out):
         neural_dists[lyr["name"]] = (shared, D_neural)
 
     # Mantel comparisons
+    print("\nMantel comparisons...")
     mantel_rows = []
     layer_names = list(neural_dists.keys())
-    for i, n1 in enumerate(layer_names):
+    for i, n1 in tqdm(list(enumerate(layer_names)),
+                      total=len(layer_names),
+                      desc="Mantel"):
         sh1, D1 = neural_dists[n1]
         idx_ac = [phones.index(p) for p in sh1 if p in phones]
         Dac_sub = D_euc[np.ix_(idx_ac, idx_ac)]
@@ -555,16 +559,29 @@ def distances(ac, layers, out):
             continue
         speakers = df_cls["speaker_id"].unique()
         y_true, y_pred = [], []
+
         for spk in speakers:
             train = df_cls[df_cls["speaker_id"] != spk]
             test = df_cls[df_cls["speaker_id"] == spk]
-            centroids = train.groupby("phoneme")[feat_cols].mean()
-            if centroids.empty or test.empty:
+
+            if train.empty or test.empty:
                 continue
+
+            centroids = (train.groupby("phoneme")[feat_cols]
+                         .mean(numeric_only=True)
+                         .astype(np.float32))
+
+            if centroids.empty:
+                continue
+
+            centroid_values = centroids.values.astype(np.float32)
+
             for _, row in test.iterrows():
-                v = row[feat_cols].values.reshape(1, -1)
-                dists = cdist(v, centroids.values)[0]
+                v = row[feat_cols].values.astype(np.float32).reshape(1, -1)
+
+                dists = cdist(v, centroid_values)[0]
                 pred = centroids.index[dists.argmin()]
+
                 y_true.append(row["phoneme"])
                 y_pred.append(pred)
 
@@ -873,7 +890,7 @@ def rope(ac, layers, out):
                                  ci_lo=r["ci_lo"], ci_hi=r["ci_hi"],
                                  rope_class=r["rope_class"]))
     save_csv(out / "tables" / "8_rope_summary.csv", pd.DataFrame(rope_summary), index=True)
-    print("  §8 done.")
+    print("Rope done")
 
 
 #############
@@ -904,18 +921,19 @@ def clustering(ac, layers, out):
         gt_fb_sub = [gt_fb[i] for i in idx]
         gt_hml_sub = [gt_hml[i] for i in idx]
 
-        Z = linkage(cent_df.values, method="ward",
-                    metric="euclidean" if metric == "euclidean" else "cosine")
+        if metric == "euclidean":
+            X = cent_df.values
+        else:
+            X = cent_df.values.astype(np.float32)
+            X = X / np.linalg.norm(X, axis=1, keepdims=True)
 
-        # Silhouette-based k selection (k=2..min(n-1,6))
-        from sklearn.metrics import silhouette_score
+        Z = linkage(X, method="ward")
         best_k, best_sil = 2, -1
         for k in range(2, min(len(phones) - 1, 7)):
             labels = fcluster(Z, k, criterion="maxclust")
             try:
-                s = silhouette_score(cent_df.values, labels,
-                                     metric="euclidean" if metric == "euclidean"
-                                     else "cosine")
+                s = silhouette_score(X, labels,
+                                     metric="euclidean" if metric == "euclidean" else "cosine")
                 if s > best_sil:
                     best_sil, best_k = s, k
             except Exception:

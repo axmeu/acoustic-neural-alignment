@@ -43,10 +43,10 @@ def merge(meta, ids, vecs):
     n_dim = vecs.shape[1]
     pc_cols = [f"pc_{k}" for k in range(n_dim)]
     vec_df = pd.DataFrame(vecs, columns=pc_cols)
-    vec_df["token_id"] = ids
-    if "token_id" not in meta.columns:
+    vec_df["phoneme_id"] = ids
+    if "phoneme_id" not in meta.columns:
         raise ValueError("meta must contain token_id for safe merge")
-    return meta.merge(vec_df, on="token_id", how="inner")
+    return meta.merge(vec_df, on="phoneme_id", how="inner")
 
 
 def mantel_test(D1, D2, n_perm=499):
