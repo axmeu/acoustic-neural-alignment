@@ -56,7 +56,9 @@ def normalise_neural(
     umap_min_dist=0.1
 ):
 
-    output_dir = Path(output_dir)
+    output_dir = Path(output_dir) / tag
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     data = np.load(npz_path, allow_pickle=True)
     ids = data["ids"]
     vecs = data["vectors"].astype(np.float32)
@@ -67,7 +69,7 @@ def normalise_neural(
 
     n_clust = min(n_pca_clust, n_valid, dim)
     coords, evr, comp, mean = apply_pca(vecs, valid_mask, n_clust)
-    save_npz(output_dir / f"{tag}_pca{n_clust}.npz",
+    save_npz(output_dir / "pca_clust.npz",
              ids_arr=ids,
              vecs_arr=coords,
              explained_variance_ratio=evr,
@@ -76,7 +78,7 @@ def normalise_neural(
 
     n_lme = min(n_pca_lme, n_valid, dim)
     coords, evr, comp, mean = apply_pca(vecs, valid_mask, n_lme)
-    save_npz(output_dir / f"{tag}_pca{n_lme}_lme.npz",
+    save_npz(output_dir / "pca_lme.npz",
              ids_arr=ids,
              vecs_arr=coords,
              explained_variance_ratio=evr,
@@ -84,7 +86,7 @@ def normalise_neural(
              mean=mean)
 
     coords, evr, comp, mean = apply_pca(vecs, valid_mask, 2)
-    save_npz(output_dir / f"{tag}_pca2.npz",
+    save_npz(output_dir / "pca2.npz",
              ids_arr=ids,
              vecs_arr=coords,
              explained_variance_ratio=evr,
@@ -92,7 +94,7 @@ def normalise_neural(
              mean=mean)
 
     coords = apply_umap(vecs, valid_mask, min(n_umap_neighbors, n_valid - 1), umap_min_dist)
-    save_npz(output_dir / f"{tag}_umap2.npz", ids_arr=ids, vecs_arr=coords)
+    save_npz(output_dir / "umap2.npz", ids_arr=ids, vecs_arr=coords)
 
 
 if __name__ == "__main__":
@@ -102,7 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--whisper-tag",    default="whisper")
     parser.add_argument("--xlsr",           default=None)
     parser.add_argument("--xlsr-tag",       default="xlsr")
-    parser.add_argument("--output-dir",     default="outputs")
+    parser.add_argument("--output-dir",     default="outputs/neural_norm")
     parser.add_argument("--n-pca-clust",    type=int, default=50)
     parser.add_argument("--n-pca-lme",      type=int, default=5)
     parser.add_argument("--n-umap-neighbors", type=int, default=15)
