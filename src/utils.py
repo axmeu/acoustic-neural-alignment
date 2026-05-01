@@ -101,10 +101,9 @@ def load_audio(wav_path, target_sr=16_000):
     return audio, sr
 
 
-def get_frame_indices(onset_s, offset_s, n_frames, audio_duration_s):
-    frame_dur = audio_duration_s / n_frames
-    t_start = int(np.floor(onset_s / frame_dur))
-    t_end = int(np.ceil(offset_s / frame_dur))
+def get_frame_indices(onset_s, offset_s, n_frames, frame):
+    t_start = int(np.floor(onset_s / frame))
+    t_end = int(np.ceil(offset_s / frame))
     return max(0, t_start), min(n_frames, t_end)
 
 

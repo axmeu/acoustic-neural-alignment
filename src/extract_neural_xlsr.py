@@ -36,10 +36,12 @@ def extract_file(wav_path, group, feature_extractor, model, layer, device):
     hidden = hidden.squeeze(0).cpu().numpy()
     n_frames, hidden_dim = hidden.shape
 
+    frame = audio_duration_s / n_frames
+
     results = []
     for _, row in group.iterrows():
         t0, t1 = get_frame_indices(
-            row["onset_s"], row["offset_s"], n_frames, audio_duration_s
+            row["onset_s"], row["offset_s"], n_frames, frame
         )
         if t0 >= t1:
             vec = np.full(hidden_dim, np.nan)

@@ -7,21 +7,22 @@ from transformers import WhisperProcessor, WhisperModel
 from utils import load_audio, get_frame_indices, save_npz
 
 
+WHISPER_FRAME = 0.02
+
+
 def load_model(model_name, device):
     processor = WhisperProcessor.from_pretrained(model_name)
     model = WhisperModel.from_pretrained(
         model_name,
         output_hidden_states=True,
-        torch_dtype=torch.float32)
-
+    )
+    model = model.float()
     model.eval().to(device)
     return processor, model
 
 
 def extract_file(wav_path, group, processor, model, layer, device):
     audio, sr = load_audio(wav_path)
-
-    audio_duration_s = len(audio) / sr
 
     inputs = processor(audio, sampling_rate=sr, return_tensors="pt")
     input_features = inputs.input_features.to(device)
@@ -36,7 +37,7 @@ def extract_file(wav_path, group, processor, model, layer, device):
     results = []
     for _, row in group.iterrows():
         t0, t1 = get_frame_indices(
-            row["onset_s"], row["offset_s"], n_frames, audio_duration_s
+            row["onset_s"], row["offset_s"], n_frames, WHISPER_FRAME
         )
         if t0 >= t1:
             vec = np.full(hidden.shape[-1], np.nan)

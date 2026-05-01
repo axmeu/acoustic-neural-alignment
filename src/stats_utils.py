@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from matplotlib.patches import Ellipse
+from scipy.stats import chi2
 import matplotlib.pyplot as plt
 
 
@@ -45,7 +46,7 @@ def merge(meta, ids, vecs):
     vec_df = pd.DataFrame(vecs, columns=pc_cols)
     vec_df["phoneme_id"] = ids
     if "phoneme_id" not in meta.columns:
-        raise ValueError("meta must contain token_id for safe merge")
+        raise ValueError("df must contain phoneme_id for merge")
     return meta.merge(vec_df, on="phoneme_id", how="inner")
 
 
@@ -72,11 +73,14 @@ def bootstrap_ci(df, stat_fn,
 
     rng = np.random.default_rng(seed)
     speakers = df[speaker_col].unique()
+
+    groups = {s: g for s, g in df.groupby(speaker_col)}
+
     boot = []
     for _ in range(n_boot):
         samp = rng.choice(speakers, size=len(speakers), replace=True)
         resampled = pd.concat(
-            [df[df[speaker_col] == s] for s in samp], ignore_index=True)
+            [groups[s] for s in samp], ignore_index=True)
         try:
             boot.append(stat_fn(resampled))
         except Exception:
@@ -94,7 +98,7 @@ def centroid_cosine_dist(v1, v2):
     return float(1 - np.dot(c1, c2) / (n1 * n2))
 
 
-def confidence_ellipse(x, y, ax, n_std=1.96, **kwargs):
+def confidence_ellipse(x, y, ax, confidence=0.95, **kwargs):
     if len(x) < 3:
         return
     cov = np.cov(x, y)
@@ -102,7 +106,10 @@ def confidence_ellipse(x, y, ax, n_std=1.96, **kwargs):
     order = vals.argsort()[::-1]
     vals, vecs = vals[order], vecs[:, order]
     theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
-    w, h = 2 * n_std * np.sqrt(vals)
+
+    scale = np.sqrt(chi2.ppf(confidence, df=2))
+
+    w, h = 2 * scale * np.sqrt(vals)
     ell = Ellipse(xy=(np.mean(x), np.mean(y)),
                   width=w, height=h, angle=theta,
                   linewidth=1.5, fill=False, **kwargs)

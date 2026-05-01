@@ -19,7 +19,7 @@ from scipy import stats
 from scipy.spatial.distance import cdist
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from sklearn.metrics import (adjusted_rand_score, confusion_matrix,
-                             f1_score, accuracy_score)
+                             f1_score, accuracy_score, silhouette_score)
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
@@ -39,15 +39,15 @@ F2_25 = "F2_25"
 F1_75 = "F1_75"
 F2_75 = "F2_75"
 
-INTRA_SPK_PHON = {"ə", "u", "o", "e", "ɑ",
-                  "a", "i"}
+TARGET_PHON = {"ə", "u", "o", "e", "ɑ",
+               "a", "i"}
 
 ###########################
 # 5 Descriptive Statistics
 ###########################
 
 
-def desc_acoustic(df, out, intra_spk_phon=INTRA_SPK_PHON, ):
+def desc_acoustic(df, out, intra_spk_phon=TARGET_PHON, ):
     print("\n=== Acoustic Descriptive Statistics ===")
     grp_cols = ["phoneme", "l1_status", "gender"]
     vowels = df[df["phoneme"].apply(is_vowel)]
@@ -71,24 +71,46 @@ def desc_acoustic(df, out, intra_spk_phon=INTRA_SPK_PHON, ):
     for ph, g in vowels.groupby("phoneme"):
         if F1_LOB not in g.columns:
             continue
-        v = g[F1_LOB].dropna()
-        var_total = v.var()
-        spk_means = g.groupby("speaker_id")[F1_LOB].mean()
-        var_inter = spk_means.var()
-        intra = g.groupby("speaker_id")[F1_LOB].var()
-        var_intra = intra.mean()
-        var_resid = max(0, var_total - var_inter - var_intra)
-        var_rows.append(dict(phoneme=ph, var_total=var_total,
-                             var_inter_speaker=var_inter,
-                             var_intra_speaker=var_intra,
-                             var_residual=var_resid))
-    save_csv(out / "tables" / "desc_variance_decomposition.csv", pd.DataFrame(var_rows), index=True)
+        g = g[[F1_LOB, "speaker_id", "sentence_id"]].dropna()
+        if g["speaker_id"].nunique() < 3 or len(g) < 20:
+            continue
+        try:
+            # Random intercept for speaker + variance component for sentence (within speaker)
+            m = smf.mixedlm(
+                f"{F1_LOB} ~ 1",
+                data=g,
+                groups=g["speaker_id"],
+                vc_formula={"sentence": "0 + C(sentence_id)"},
+            ).fit(reml=True, method="lbfgs")
+
+            var_inter = float(m.cov_re.iloc[0, 0])           # σ²_speaker
+            var_intra = float(m.vcomp[0]) if len(m.vcomp) else 0.0  # σ²_sentence|speaker
+            var_resid = float(m.scale)                        # σ²_residual
+            var_total = var_inter + var_intra + var_resid
+
+            var_rows.append(dict(
+                phoneme=ph,
+                var_total=var_total,
+                var_inter_speaker=var_inter,
+                var_intra_speaker=var_intra,
+                var_residual=var_resid,
+                prop_inter=var_inter / var_total,
+                prop_intra=var_intra / var_total,
+                prop_resid=var_resid / var_total,
+                n_tokens=len(g),
+                n_speakers=g["speaker_id"].nunique(),
+            ))
+        except Exception as exc:
+            print(f"    Variance decomposition failed for /{ph}/: {exc}")
+
+    save_csv(out / "tables" / "5_desc_variance_decomposition.csv",
+             pd.DataFrame(var_rows), index=True)
 
     # ── Vowel chart (F1 vs F2, IPA convention: F1 inverted) ──
     fig, ax = plt.subplots(figsize=(9, 7))
     groups = vowels.groupby(["l1_status", "gender"])
-    colors = {"L1_F": "#1f77b4", "L1_M": "#aec7e8", "L2_F": "#d62728", "L2_M": "#f7b6d2"}
-    markers = {"L1_F": "o", "L1_M": "s", "L2_F": "^", "L2_M": "D"}
+    colors = {"L1_f": "#1f77b4", "L1_m": "#aec7e8", "L2_f": "#d62728", "L2_m": "#f7b6d2"}
+    markers = {"L1_f": "o", "L1_m": "s", "L2_f": "^", "L2_m": "D"}
     for (l1, gen), g in groups:
         label = f"{l1}_{gen}"
         col = colors.get(label, "grey")
@@ -346,8 +368,8 @@ def group_comparisons(ac, layers: list[dict], out: Path):
         if feat not in vowels.columns:
             continue
         spk_means = vowels.groupby(["speaker_id", "gender"])[feat].mean().reset_index()
-        f = spk_means[spk_means["gender"] == "F"][feat].values
-        m = spk_means[spk_means["gender"] == "M"][feat].values
+        f = spk_means[spk_means["gender"] == "f"][feat].values
+        m = spk_means[spk_means["gender"] == "m"][feat].values
         if len(f) >= 3 and len(m) >= 3:
             stat, p = stats.ttest_ind(f, m)
             gender_rows.append(dict(feature=feat, stat=stat, p=p))
@@ -368,6 +390,7 @@ def group_comparisons(ac, layers: list[dict], out: Path):
         dfv = df[df["phoneme"].apply(is_vowel)]
         ph_pvals = []
         ph_phones = sorted(dfv["phoneme"].unique())
+        rng = np.random.default_rng(42)
         for ph in ph_phones:
             sub = dfv[dfv["phoneme"] == ph]
             l1v = sub[sub["l1_status"] == "L1"][pc_cols].values
@@ -376,16 +399,16 @@ def group_comparisons(ac, layers: list[dict], out: Path):
                 ph_pvals.append(np.nan)
                 continue
             obs = centroid_cosine_dist(l1v, l2v)
-            rng = np.random.default_rng(42)
             all_v = np.vstack([l1v, l2v])
             n1 = len(l1v)
             count = 0
-            for _ in range(500):
+            N_PERM = 5000
+            for _ in range(N_PERM):
                 perm = rng.permutation(len(all_v))
                 d = centroid_cosine_dist(all_v[perm[:n1]], all_v[perm[n1:]])
                 if d >= obs:
                     count += 1
-            p = (count + 1) / 501
+            p = (count + 1) / (N_PERM + 1)
             ph_pvals.append(p)
             perm_rows.append(dict(layer=lyr["name"], phoneme=ph,
                                   obs_dist=obs, p_raw=p))
@@ -504,7 +527,7 @@ def distances(ac, layers, out):
             c1 = df[df["phoneme"] == p1][[F1_LOB, F2_LOB]].mean().values
             c2 = df[df["phoneme"] == p2][[F1_LOB, F2_LOB]].mean().values
             return float(np.linalg.norm(c1 - c2))
-        ci_lo, ci_hi = bootstrap_ci(sub, ac_dist, n_boot=500)
+        ci_lo, ci_hi = bootstrap_ci(sub, ac_dist, n_boot=2000)
         boot_rows.append(dict(pair=f"{p1}-{p2}", rep="acoustic",
                               point=ac_dist(sub), ci_lo=ci_lo, ci_hi=ci_hi))
         # neural bootstrap
@@ -527,7 +550,7 @@ def distances(ac, layers, out):
                 if len(v1) == 0 or len(v2) == 0:
                     return np.nan
                 return centroid_cosine_dist(v1, v2)
-            ci_lo2, ci_hi2 = bootstrap_ci(dfv, ne_dist, n_boot=500)
+            ci_lo2, ci_hi2 = bootstrap_ci(dfv, ne_dist, n_boot=2000)
             boot_rows.append(dict(pair=f"{p1}-{p2}", rep=lyr["name"],
                                   point=ne_dist(dfv), ci_lo=ci_lo2, ci_hi=ci_hi2))
 
@@ -625,13 +648,22 @@ def lme(ac, layers, out):
 
     # Encode fixed effects
     vowels["is_L2"] = (vowels["l1_status"] == "L2").astype(int)
-    vowels["is_male"] = (vowels["gender"] == "M").astype(int)
+    vowels["is_male"] = (vowels["gender"].str.lower() == "m").astype(int)
+
+    # Diagnostic
+    print(f"  Gender values: {vowels['gender'].value_counts().to_dict()}")
+    print(f"  is_male sum: {vowels['is_male'].sum()} / {len(vowels)}")
+    print(f"  is_L2 sum: {vowels['is_L2'].sum()} / {len(vowels)}")
 
     lme_rows = []
 
+    target_phonemes = [nfc(p) for p in TARGET_PHON]
+    target_phonemes = [p for p in target_phonemes if p in vowels["phoneme"].values]
+    print(f"  Target phonemes for LME: {target_phonemes}")
+
     def fit_models(df, response, tag):
         df = df[[response, "is_L2", "is_male", "speaker_id"]].dropna()
-        if df["speaker_id"].nunique() < 4:
+        if df["speaker_id"].nunique() < 4 or len(df) < 20:
             return
         formulas = {
             "null":        f"{response} ~ 1",
@@ -641,18 +673,20 @@ def lme(ac, layers, out):
         fitted = {}
         for name, formula in formulas.items():
             try:
+                # Use REML for null (ICC), ML for nested LRT comparisons
+                use_reml = (name == "null")
                 model = smf.mixedlm(formula, df,
-                                    groups=df["speaker_id"]).fit(reml=False,
-                                                                 method="lbfgs")
+                                    groups=df["speaker_id"]).fit(
+                                        reml=use_reml, method="lbfgs")
                 fitted[name] = model
-                # ICC from null model
+
                 if name == "null":
                     var_u = float(model.cov_re.iloc[0, 0])
                     var_e = float(model.scale)
-                    icc = var_u / (var_u + var_e)
+                    icc = var_u / (var_u + var_e) if (var_u + var_e) > 0 else np.nan
                     lme_rows.append(dict(tag=tag, model=name,
                                          aic=model.aic, bic=model.bic,
-                                         icc=icc))
+                                         var_u=var_u, var_e=var_e, icc=icc))
                     print(f"    {tag} null ICC = {icc:.3f}")
                 else:
                     lme_rows.append(dict(tag=tag, model=name,
@@ -661,37 +695,43 @@ def lme(ac, layers, out):
             except Exception as exc:
                 print(f"    LME failed for {tag}/{name}: {exc}")
 
-        # LRT main vs interaction
+        # LRT main vs interaction (both fitted with ML)
         if "main" in fitted and "interaction" in fitted:
             lr = 2 * (fitted["interaction"].llf - fitted["main"].llf)
             p_lr = stats.chi2.sf(lr, df=1)
             lme_rows.append(dict(tag=tag, model="LRT_main_vs_interaction",
                                  lr_stat=lr, lr_p=p_lr,
                                  aic=np.nan, bic=np.nan, icc=np.nan))
+            print(f"    {tag} LRT main vs interaction: LR={lr:.2f}, p={p_lr:.4f}")
 
-        # Marginal / conditional R² (Nakagawa & Schielzeth approximation)
+        # R² (Nakagawa & Schielzeth) — fixed-only prediction
         if "interaction" in fitted:
             m = fitted["interaction"]
             try:
-                var_f = np.var(m.fittedvalues)
+                beta = m.fe_params.values
+                X = m.model.exog
+                var_f = float(np.var(X @ beta))
                 var_u = float(m.cov_re.iloc[0, 0])
                 var_e = float(m.scale)
-                r2_marginal = var_f / (var_f + var_u + var_e)
-                r2_conditional = (var_f + var_u) / (var_f + var_u + var_e)
+                denom = var_f + var_u + var_e
+                r2_marginal = var_f / denom if denom > 0 else np.nan
+                r2_conditional = (var_f + var_u) / denom if denom > 0 else np.nan
                 lme_rows.append(dict(tag=tag, model="R2",
                                      r2_marginal=r2_marginal,
                                      r2_conditional=r2_conditional,
                                      aic=np.nan, bic=np.nan, icc=np.nan))
                 print(f"    {tag}: R²m={r2_marginal:.3f}, R²c={r2_conditional:.3f}")
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"    R² calc failed for {tag}: {exc}")
 
-    # Acoustic models
-    fit_models(vowels, F1_LOB, "acoustic_F1")
-    fit_models(vowels, F2_LOB, "acoustic_F2")
+    # ── Acoustic models per phoneme ──
+    for ph in target_phonemes:
+        sub = vowels[vowels["phoneme"] == ph]
+        fit_models(sub, F1_LOB, f"acoustic_F1_{ph}")
+        fit_models(sub, F2_LOB, f"acoustic_F2_{ph}")
 
-    # Neural models (PC dimensions)
-    for lyr in tqdm(layers, desc="LME"):
+    # ── Neural models per phoneme, on first 5 PCs ──
+    for lyr in tqdm(layers, desc="LME neural"):
         pair = lyr.get("pca_lme")
         if pair is None:
             pair = lyr.get("pca_clust") or lyr.get("pca2")
@@ -702,14 +742,19 @@ def lme(ac, layers, out):
         if df.empty:
             continue
         df["is_L2"] = (df["l1_status"] == "L2").astype(int)
-        df["is_male"] = (df["gender"] == "M").astype(int)
+        df["is_male"] = (df["gender"].str.lower() == "m").astype(int)
         pc_cols = [c for c in df.columns if c.startswith("pc_")]
-
         dfv = df[df["phoneme"].apply(is_vowel)]
-        for dim in pc_cols[:5]:
-            fit_models(dfv, dim, f"{lyr['name']}_{dim}")
 
-    save_csv(out / "tables" / "lme_results.csv", pd.DataFrame(lme_rows), index=True)
+        for ph in target_phonemes:
+            sub = dfv[dfv["phoneme"] == ph]
+            if len(sub) < 20:
+                continue
+            for dim in pc_cols[:5]:
+                fit_models(sub, dim, f"{lyr['name']}_{dim}_{ph}")
+
+    save_csv(out / "tables" / "7_lme_results.csv",
+             pd.DataFrame(lme_rows), index=True)
     print("LME done")
 
 
@@ -760,28 +805,55 @@ def rope(ac, layers, out):
     save_csv(out / "tables" / "8_acoustic_ci_rope.csv", pd.DataFrame(ac_rows), index=True)
 
     # ── Forest plot acoustic ──
-    ac_f1 = [r for r in ac_rows if r["feature"] in [F1, F1_LOB]]
-    if ac_f1:
-        fig, ax = plt.subplots(figsize=(8, max(4, len(ac_f1) * 0.4)))
+    def _make_forest_plot(rows, feat_label, fig_path, with_rope=False):
+        if not rows:
+            return
+        fig, ax = plt.subplots(figsize=(8, max(4, len(rows) * 0.4)))
         colors_rope = {"equivalent": "green", "non-equivalent": "red",
-                       "indeterminate": "orange", "N/A (normalised)": "grey"}
-        for k, r in enumerate(ac_f1):
+                    "indeterminate": "orange", "N/A (normalised)": "grey"}
+        for k, r in enumerate(rows):
             c = colors_rope.get(r["rope_class"], "grey")
             ax.barh(k, r["ci_hi"] - r["ci_lo"],
                     left=r["ci_lo"], height=0.4, color=c, alpha=0.5)
             ax.plot([r["point"]], [k], "k|", markersize=8)
         ax.axvline(0, color="black", linewidth=0.8, linestyle="--")
-        # shade ROPE for raw Hz rows
-        raw_rows = [r for r in ac_f1 if r["rope_lo"] is not None]
-        if raw_rows:
-            ax.axvspan(raw_rows[0]["rope_lo"], raw_rows[0]["rope_hi"],
-                       alpha=0.1, color="blue", label="ROPE ±20 Hz")
-        ax.set_yticks(range(len(ac_f1)))
-        ax.set_yticklabels([f"{r['phoneme']} ({r['feature']})" for r in ac_f1], fontsize=8)
-        ax.set_xlabel("L1 – L2 difference (F1)")
-        ax.set_title("Forest plot – L1/L2 contrast in F1 with ROPE")
-        ax.legend()
-        save_fig(fig, out / "figures" / "8_forest_acoustic_F1.png")
+
+        if with_rope and rows[0]["rope_lo"] is not None:
+            ax.axvspan(rows[0]["rope_lo"], rows[0]["rope_hi"],
+                       alpha=0.1, color="blue",
+                       label=f"ROPE [{rows[0]['rope_lo']:.0f}, {rows[0]['rope_hi']:.0f}] Hz")
+            ax.legend(loc="lower right")
+
+        ax.set_yticks(range(len(rows)))
+        ax.set_yticklabels([r["phoneme"] for r in rows], fontsize=8)
+        ax.set_xlabel(f"L1 – L2 difference ({feat_label})")
+        ax.set_title(f"Forest plot – L1/L2 contrast in {feat_label}")
+        save_fig(fig, fig_path)
+
+
+    # F1 — Hz (with ROPE)
+    rows_f1_hz = [r for r in ac_rows if r["feature"] == F1]
+    _make_forest_plot(rows_f1_hz, "F1 (Hz)",
+                      out / "figures" / "8_forest_acoustic_F1_Hz.png",
+                      with_rope=True)
+
+    # F1 — Lobanov (no ROPE)
+    rows_f1_lob = [r for r in ac_rows if r["feature"] == F1_LOB]
+    _make_forest_plot(rows_f1_lob, "F1 (Lobanov)",
+                      out / "figures" / "8_forest_acoustic_F1_Lobanov.png",
+                      with_rope=False)
+
+    # F2 — Hz (with ROPE)
+    rows_f2_hz = [r for r in ac_rows if r["feature"] == F2]
+    _make_forest_plot(rows_f2_hz, "F2 (Hz)",
+                      out / "figures" / "8_forest_acoustic_F2_Hz.png",
+                      with_rope=True)
+
+    # F2 — Lobanov (no ROPE)
+    rows_f2_lob = [r for r in ac_rows if r["feature"] == F2_LOB]
+    _make_forest_plot(rows_f2_lob, "F2 (Lobanov)",
+                      out / "figures" / "8_forest_acoustic_F2_Lobanov.png",
+                      with_rope=False)
 
     # ── Neural CIs (bootstrap on cosine distance) ──
     neural_rows = []
@@ -818,24 +890,14 @@ def rope(ac, layers, out):
                 continue
             point = centroid_cosine_dist(l1v, l2v)
 
-            def _dist_fn(d, _pc=pc_cols, _ph=ph):
-                v1 = d[d["phoneme"] == _ph][d["l1_status"] == "L1"][_pc].values \
-                    if "l1_status" in d.columns else d[d["phoneme"] == _ph][_pc].values
-                v2 = d[d["phoneme"] == _ph][d["l1_status"] == "L2"][_pc].values \
-                    if "l1_status" in d.columns else np.zeros((1, len(_pc)))
-                v1 = sub[sub["l1_status"] == "L1"][_pc].values
-                v2 = sub[sub["l1_status"] == "L2"][_pc].values
+            def _ne_dist(d, _pc=pc_cols):
+                v1 = d[d["l1_status"] == "L1"][_pc].values
+                v2 = d[d["l1_status"] == "L2"][_pc].values
+                if len(v1) == 0 or len(v2) == 0:
+                    return np.nan
                 return centroid_cosine_dist(v1, v2)
 
-            # simplified bootstrap: resample tokens within each group
-            rng = np.random.default_rng(42)
-            boot = []
-            for _ in range(500):
-                b1 = l1v[rng.choice(len(l1v), len(l1v), replace=True)]
-                b2 = l2v[rng.choice(len(l2v), len(l2v), replace=True)]
-                boot.append(centroid_cosine_dist(b1, b2))
-            ci_lo = float(np.nanpercentile(boot, 2.5))
-            ci_hi = float(np.nanpercentile(boot, 97.5))
+            ci_lo, ci_hi = bootstrap_ci(sub, _ne_dist, n_boot=2000)
 
             if ci_lo > rope_neural:
                 rope_class = "non-equivalent"
@@ -992,16 +1054,31 @@ def clustering(ac, layers, out):
         gender=("gender", "first")
     ).reset_index()
 
-    def speaker_cluster(rep_name: str, spk_features: pd.DataFrame):
+    def speaker_cluster(rep_name, spk_features):
         if spk_features.shape[0] < 4:
             return
+
+        meta_indexed = speaker_meta.set_index("speaker_id")
+        common = spk_features.index.intersection(meta_indexed.index)
+        if len(common) < 4:
+            print(f"speaker_cluster {rep_name}: not enough common speakers ({len(common)})")
+            return
+
+        spk_features = spk_features.loc[common]
+        meta_aligned = meta_indexed.loc[common]
+
         Z = linkage(spk_features.values, method="ward")
 
         # k=2 for L1/L2 and gender
         for k, gt_col in [(2, "l1_status"), (2, "gender")]:
             labels_k = fcluster(Z, k, criterion="maxclust")
-            gt = speaker_meta.set_index("speaker_id").reindex(
-                spk_features.index)[gt_col].values
+            gt = meta_aligned[gt_col].values
+
+            # Skip if ground truth has NaN
+            if pd.isna(gt).any():
+                print(f"speaker_cluster {rep_name}: NaN in ground truth for {gt_col}, skipping")
+                continue
+
             ari = adjusted_rand_score(gt, labels_k)
             speaker_ari_rows.append(dict(representation=rep_name,
                                          grouping=gt_col, ari=ari))
@@ -1009,9 +1086,8 @@ def clustering(ac, layers, out):
 
         # Dendrogram
         fig, ax = plt.subplots(figsize=(max(5, len(spk_features) * 0.5), 5))
-        labels_spk = [f"{r['speaker_id']}_{r['l1_status']}_{r['gender']}"
-                      for _, r in speaker_meta.set_index("speaker_id")
-                      .reindex(spk_features.index).reset_index().iterrows()]
+        labels_spk = [f"{spk}_{meta_aligned.loc[spk, 'l1_status']}_{meta_aligned.loc[spk, 'gender']}"
+                      for spk in spk_features.index]
         dendrogram(Z, labels=labels_spk, ax=ax, leaf_rotation=90, leaf_font_size=7)
         ax.set_title(f"Speaker dendrogram – {rep_name}")
         save_fig(fig, out / "figures" / f"9_speaker_dendro_{rep_name}.png")
