@@ -12,7 +12,8 @@ def load_model(model_name, device):
     model = Wav2Vec2Model.from_pretrained(
         model_name,
         output_hidden_states=True,
-        torch_dtype=torch.float32)
+        use_safetensors=True)
+    model = model.float()
     model.eval().to(device)
     return feature_extractor, model
 

@@ -724,6 +724,25 @@ def lme(ac, layers, out):
             except Exception as exc:
                 print(f"    R² calc failed for {tag}: {exc}")
 
+        # ── Coefficients of the L1 × Gender interaction term (for Q9) ──
+        if "interaction" in fitted:
+            m = fitted["interaction"]
+            try:
+                if "is_L2:is_male" in m.fe_params.index:
+                    coef_inter = float(m.fe_params["is_L2:is_male"])
+                    p_inter = float(m.pvalues["is_L2:is_male"])
+                    ci = m.conf_int().loc["is_L2:is_male"]
+                    lme_rows.append(dict(tag=tag, model="interaction_coef",
+                                         coef=coef_inter,
+                                         p=p_inter,
+                                         ci_lo=float(ci[0]),
+                                         ci_hi=float(ci[1]),
+                                         aic=np.nan, bic=np.nan, icc=np.nan))
+                    print(f"    {tag} L1×Gender: β={coef_inter:.3f}, "
+                          f"p={p_inter:.4f}, CI=[{float(ci[0]):.3f}, {float(ci[1]):.3f}]")
+            except Exception as exc:
+                print(f"Interaction coef extraction failed for {tag}: {exc}")
+
     # ── Acoustic models per phoneme ──
     for ph in target_phonemes:
         sub = vowels[vowels["phoneme"] == ph]
