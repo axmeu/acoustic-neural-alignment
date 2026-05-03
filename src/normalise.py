@@ -30,19 +30,20 @@ def lobanov_normalise(df):
 
 
 def apply_pca(vecs, valid_mask, n_components):
+    print("\nComputing PCA...")
     pca = PCA(n_components=n_components, random_state=42)
     coords = np.full((len(vecs), n_components), np.nan, dtype=np.float32)
     coords[valid_mask] = pca.fit_transform(vecs[valid_mask])
     return coords, pca.explained_variance_ratio_, pca.components_, pca.mean_
 
 
-def apply_umap(vecs, valid_mask, n_neighbors, min_dist):
+def apply_umap(coords_reduced, valid_mask, n_neighbors, min_dist):
     print("\nComputing UMAP...")
-    coords = np.full((len(vecs), 2), np.nan, dtype=np.float32)
+    coords = np.full((len(coords_reduced), 2), np.nan, dtype=np.float32)
     coords[valid_mask] = UMAP(
         n_components=2, n_neighbors=n_neighbors,
-        min_dist=min_dist, random_state=42, low_memory=False,
-    ).fit_transform(vecs[valid_mask])
+        min_dist=min_dist, random_state=42, low_memory=True,
+    ).fit_transform(coords_reduced[valid_mask])
     return coords
 
 
@@ -65,50 +66,41 @@ def normalise_neural(
 
     valid_mask = ~np.isnan(vecs).any(axis=1)
     n_valid, dim = vecs[valid_mask].shape
-    print(f"\n[{tag}] {n_valid}/{len(vecs)} valid vectors  (dim={dim})")
+    print(f"\n[{tag}] {n_valid}/{len(vecs)} valid vectors (dim={dim})")
 
     n_clust = min(n_pca_clust, n_valid, dim)
-    coords, evr, comp, mean = apply_pca(vecs, valid_mask, n_clust)
+    coords_full, evr, comp, mean = apply_pca(vecs, valid_mask, n_clust)
+
     save_npz(output_dir / "pca_clust.npz",
-             ids_arr=ids,
-             vecs_arr=coords,
-             explained_variance_ratio=evr,
-             components=comp,
-             mean=mean)
+             ids_arr=ids, vecs_arr=coords_full,
+             explained_variance_ratio=evr, components=comp, mean=mean)
 
-    n_lme = min(n_pca_lme, n_valid, dim)
-    coords, evr, comp, mean = apply_pca(vecs, valid_mask, n_lme)
+    n_lme = min(n_pca_lme, n_clust)
     save_npz(output_dir / "pca_lme.npz",
-             ids_arr=ids,
-             vecs_arr=coords,
-             explained_variance_ratio=evr,
-             components=comp,
-             mean=mean)
+             ids_arr=ids, vecs_arr=coords_full[:, :n_lme],
+             explained_variance_ratio=evr[:n_lme], components=comp[:n_lme], mean=mean)
 
-    coords, evr, comp, mean = apply_pca(vecs, valid_mask, 2)
     save_npz(output_dir / "pca2.npz",
-             ids_arr=ids,
-             vecs_arr=coords,
-             explained_variance_ratio=evr,
-             components=comp,
-             mean=mean)
+             ids_arr=ids, vecs_arr=coords_full[:, :2],
+             explained_variance_ratio=evr[:2], components=comp[:2], mean=mean)
 
-    coords = apply_umap(vecs, valid_mask, min(n_umap_neighbors, n_valid - 1), umap_min_dist)
-    save_npz(output_dir / "umap2.npz", ids_arr=ids, vecs_arr=coords)
+    coords_umap = apply_umap(coords_full, valid_mask,
+                             min(n_umap_neighbors, n_valid - 1), umap_min_dist)
+    save_npz(output_dir / "umap2.npz", ids_arr=ids, vecs_arr=coords_umap)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--acoustic",       required=True, default="outputs/features_acoustic.csv")
-    parser.add_argument("--whisper",        default=None)
-    parser.add_argument("--whisper-tag",    default="whisper")
-    parser.add_argument("--xlsr",           default=None)
-    parser.add_argument("--xlsr-tag",       default="xlsr")
-    parser.add_argument("--output-dir",     default="outputs/neural_norm")
-    parser.add_argument("--n-pca-clust",    type=int, default=50)
-    parser.add_argument("--n-pca-lme",      type=int, default=5)
-    parser.add_argument("--n-umap-neighbors", type=int, default=15)
-    parser.add_argument("--umap-min-dist",  type=float, default=0.1)
+    parser.add_argument("--acoustic",             required=True)
+    parser.add_argument("--whisper",              default=None)
+    parser.add_argument("--whisper-tag",          default="whisper")
+    parser.add_argument("--xlsr",                 default=None)
+    parser.add_argument("--xlsr-tag",             default="xlsr")
+    parser.add_argument("--output-dir",           default="outputs/neural_norm")
+    parser.add_argument("--n-pca-clust",          type=int,   default=50)
+    parser.add_argument("--n-pca-lme",            type=int,   default=5)
+    parser.add_argument("--n-umap-neighbors",     type=int,   default=15)
+    parser.add_argument("--umap-min-dist",        type=float, default=0.1)
     args = parser.parse_args()
 
     output_path = Path(args.output_dir)
@@ -117,7 +109,6 @@ if __name__ == "__main__":
     df = pd.read_csv(args.acoustic)
     vowel_mask = df["phoneme"].apply(is_vowel)
     df_vowels = lobanov_normalise(df[vowel_mask].copy())
-
     df_out = df.copy()
     lob_cols = [f"{f}_lob" for f in FORMANTS if f in df.columns]
     df_out.loc[vowel_mask, lob_cols] = df_vowels[lob_cols].values

@@ -84,7 +84,7 @@ def desc_acoustic(df, out, intra_spk_phon=TARGET_PHON, ):
             ).fit(reml=True, method="lbfgs")
 
             var_inter = float(m.cov_re.iloc[0, 0])           # σ²_speaker
-            var_intra = float(m.vcomp[0]) if len(m.vcomp) else 0.0  # σ²_sentence|speaker
+            var_intra = float(m.vcomp.iloc[0]) if len(m.vcomp) else 0.0  # σ²_sentence|speaker
             var_resid = float(m.scale)                        # σ²_residual
             var_total = var_inter + var_intra + var_resid
 
@@ -243,7 +243,6 @@ def desc_neural(meta, layers, out):
                                                       min(500, len(vecs2)),
                                                       replace=False)
                 sim_mat = vecs_n[idx] @ vecs_n[idx].T
-                labels_sub = ph_labels[idx]
                 labels_sub = np.array(ph_labels[idx])
                 same_mask = labels_sub[:, None] == labels_sub[None, :]
                 np.fill_diagonal(same_mask, False)
