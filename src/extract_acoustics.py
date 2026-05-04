@@ -25,7 +25,7 @@ def extract_formants(sound, time, max_formant, n_formants=5):
     return results
 
 
-def extract_f0(sound, time):
+def extract_f0(sound, onset, offset):
     try:
         pitch = call(sound, "To Pitch (ac)",
                      0.0,    # time step (0 = auto)
@@ -38,7 +38,7 @@ def extract_f0(sound, time):
                      0.35,   # octave-jump cost
                      0.14,   # voiced/unvoiced cost
                      600.0)  # pitch ceiling (Hz)
-        val = call(pitch, "Get value at time", time, "Hertz", "Linear")
+        val = call(pitch, "Get mean", onset, offset, "Hertz")
         return val if val == val else np.nan
     except Exception:
         return np.nan
@@ -63,7 +63,7 @@ def extract_token(row, sound, n_formants=5):
     max_formant = get_max_formant(row["gender"])
 
     formants_mid = extract_formants(segment, midpoint, max_formant, n_formants)
-    f0 = extract_f0(segment, midpoint)
+    f0 = extract_f0(segment, row["onset_s"], row["offset_s"])
     scg = extract_scg(segment) if is_fricative(row["phoneme"]) else np.nan
     F3 = formants_mid["F3"] if is_vowel(row["phoneme"]) else np.nan
 
@@ -73,8 +73,8 @@ def extract_token(row, sound, n_formants=5):
         "F1_mid":     formants_mid["F1"],
         "F2_mid":     formants_mid["F2"],
         "F3_mid":     F3,
-        "f0_mid":     f0,
-        "SCG":        scg,
+        "f0_mean":    f0,
+        "SCG":        scg
     }
 
     if row["duration_ms"] > 80.0:
@@ -96,14 +96,14 @@ def empty_feats(phoneme_id):
     return {
         "phoneme_id": phoneme_id,
         "F1_mid": np.nan, "F2_mid": np.nan, "F3_mid": np.nan,
-        "f0_mid": np.nan, "SCG":    np.nan,
+        "f0_mean": np.nan, "SCG":    np.nan,
         "F1_25":  np.nan, "F2_25":  np.nan,
         "F1_75":  np.nan, "F2_75":  np.nan,
     }
 
 
 def report_missing(df):
-    cols = ["F1_mid", "F2_mid", "F3_mid", "f0_mid", "SCG"]
+    cols = ["F1_mid", "F2_mid", "F3_mid", "f0_mean", "SCG"]
     print("\nMissing rates:")
     for c in cols:
         if c in df.columns:
@@ -149,9 +149,9 @@ def extract_acoustics(table_path, output_path, n_formants=5):
     out = pd.DataFrame(records, columns=[
         "phoneme_id",
         "F1_mid", "F2_mid", "F3_mid",
-        "f0_mid", "SCG",
+        "f0_mean", "SCG",
         "F1_25", "F2_25",
-        "F1_75", "F2_75",
+        "F1_75", "F2_75"
     ])
 
     meta_cols = ["phoneme_id", "phoneme", "speaker_id",

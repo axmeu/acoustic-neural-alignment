@@ -90,5 +90,5 @@ if __name__ == "__main__":
         output_path=args.output,
         model_name=args.model,
         layer=args.layer,
-        device=args.device,
+        device=args.device
     )

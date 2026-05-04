@@ -25,3 +25,4 @@ praat-parselmouth = "*"
 transformers = "*"
 soundfile = "*"
 librosa = "*"
+acoustic-neural-alignment = { path = ".", editable = true }

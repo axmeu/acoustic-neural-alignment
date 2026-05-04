@@ -80,12 +80,13 @@ def desc_acoustic(df, out, intra_spk_phon=TARGET_PHON, ):
                 f"{F1_LOB} ~ 1",
                 data=g,
                 groups=g["speaker_id"],
-                vc_formula={"sentence": "0 + C(sentence_id)"},
             ).fit(reml=True, method="lbfgs")
 
-            var_inter = float(m.cov_re.iloc[0, 0])           # σ²_speaker
-            var_intra = float(m.vcomp.iloc[0]) if len(m.vcomp) else 0.0  # σ²_sentence|speaker
-            var_resid = float(m.scale)                        # σ²_residual
+            if m.cov_re.shape[0] == 0:
+                raise ValueError("cov_re is empty")
+            var_inter = float(m.cov_re.iloc[0, 0])
+            var_intra = float(m.vcomp.iloc[0]) if len(m.vcomp) else 0.0
+            var_resid = float(m.scale)
             var_total = var_inter + var_intra + var_resid
 
             var_rows.append(dict(

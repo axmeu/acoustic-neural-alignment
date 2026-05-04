@@ -7,7 +7,7 @@ from umap import UMAP
 from utils import save_npz, save_csv, is_vowel
 
 
-FORMANTS = ("F1_mid", "F2_mid")
+FORMANTS = ("F1_mid", "F2_mid", "F3_mid", "F1_25", "F2_25", "F1_75", "F2_75")
 
 
 def lobanov_normalise(df):
@@ -91,7 +91,7 @@ def normalise_neural(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--acoustic",             required=True)
+    parser.add_argument("--acoustic",             default=None)
     parser.add_argument("--whisper",              default=None)
     parser.add_argument("--whisper-tag",          default="whisper")
     parser.add_argument("--xlsr",                 default=None)
@@ -105,14 +105,15 @@ if __name__ == "__main__":
 
     output_path = Path(args.output_dir)
 
-    print("\n=== Acoustic normalisation ===")
-    df = pd.read_csv(args.acoustic)
-    vowel_mask = df["phoneme"].apply(is_vowel)
-    df_vowels = lobanov_normalise(df[vowel_mask].copy())
-    df_out = df.copy()
-    lob_cols = [f"{f}_lob" for f in FORMANTS if f in df.columns]
-    df_out.loc[vowel_mask, lob_cols] = df_vowels[lob_cols].values
-    save_csv(output_path / "features_acoustic_norm.csv", df_out)
+    if args.acoustic:
+        print("\n=== Acoustic normalisation ===")
+        df = pd.read_csv(args.acoustic)
+        vowel_mask = df["phoneme"].apply(is_vowel)
+        df_vowels = lobanov_normalise(df[vowel_mask].copy())
+        df_out = df.copy()
+        lob_cols = [f"{f}_lob" for f in FORMANTS if f in df.columns]
+        df_out.loc[vowel_mask, lob_cols] = df_vowels[lob_cols].values
+        save_csv(output_path / "features_acoustic_norm.csv", df_out)
 
     if args.whisper:
         print("\n=== Whisper normalisation ===")
