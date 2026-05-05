@@ -1,0 +1,58 @@
+Assuming unrestricted shared filesystem usage.
+None
+host: vscode-python-gpu-798204-0
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 5
+Rules claiming more threads will be scaled down.
+Provided resources: gpu=1
+Job stats:
+job                    count
+-------------------  -------
+all                        1
+analyse_ci_rope            1
+analyse_clustering         1
+analyse_descriptive        1
+analyse_lme                1
+analyse_tests              1
+extract_acoustics          1
+extract_whisper            2
+extract_xlsr               3
+normalise_acoustic         1
+normalise_whisper          2
+normalise_xlsr             3
+parse_corpus               1
+total                     19
+
+Select jobs to execute...
+Execute 1 jobs...
+[Tue May  5 10:12:42 2026]
+localrule parse_corpus:
+    output: outputs/table.csv
+    jobid: 4
+    reason: Missing output files: outputs/table.csv
+    resources: tmpdir=/tmp
+RuleException:
+CalledProcessError in file "/home/onyxia/work/Acoustic-Neural-Alignment/Snakefile", line 75:
+Command 'set -euo pipefail;  pixi run python src/parse_corpus.py --raw_dir data --metadata_file metadata_RUFR.csv --corr_file RUFRcorr.csv --phoneme_tier 2 --output outputs/table.csv' returned non-zero exit status 1.
+[Tue May  5 10:12:43 2026]
+Error in rule parse_corpus:
+    message: None
+    jobid: 4
+    output: outputs/table.csv
+    shell:
+        pixi run python src/parse_corpus.py --raw_dir data --metadata_file metadata_RUFR.csv --corr_file RUFRcorr.csv --phoneme_tier 2 --output outputs/table.csv
+        (command exited with non-zero exit code)
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look below for error messages
+[Tue May  5 10:12:43 2026]
+Error in rule parse_corpus:
+    message: None
+    jobid: 4
+    output: outputs/table.csv
+    shell:
+        pixi run python src/parse_corpus.py --raw_dir data --metadata_file metadata_RUFR.csv --corr_file RUFRcorr.csv --phoneme_tier 2 --output outputs/table.csv
+        (command exited with non-zero exit code)
+Complete log(s): /home/onyxia/work/Acoustic-Neural-Alignment/.snakemake/log/2026-05-05T101242.168236.snakemake.log
+WorkflowError:
+At least one job did not complete successfully.

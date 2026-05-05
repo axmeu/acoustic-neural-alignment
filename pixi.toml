@@ -26,3 +26,4 @@ transformers = "*"
 soundfile = "*"
 librosa = "*"
 acoustic-neural-alignment = { path = ".", editable = true }
+snakemake = ">=9.6.2, <10"

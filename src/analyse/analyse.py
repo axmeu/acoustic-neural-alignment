@@ -2,9 +2,14 @@ import argparse
 from pathlib import Path
 import pandas as pd
 from stats_utils import load_layer
-from analyse import descriptive, statistical_tests, lme
+from analyse import (descriptive,
+                     statistical_tests,
+                     lme,
+                     ci_rope,
+                     clustering)
 
-SECTIONS = ["descriptive",  "tests", "lme"]
+
+SECTIONS = ["descriptive",  "tests", "lme", "ci_rope", "clustering"]
 
 
 def load_data(acoustic_path, neural_root):
@@ -63,6 +68,11 @@ def main():
     if "lme" in sections_to_run:
         lme.lme(ac, layers, out)
 
+    if "ci_rope" in sections_to_run:
+        ci_rope.ci_rope(ac, layers, out)
+
+    if "clustering" in sections_to_run:
+        clustering.clustering(ac, layers, out)
 
 if __name__ == "__main__":
     main()
